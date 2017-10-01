@@ -1,1 +1,1 @@
-# bio-pipelines
+Collective scripts for data processing & retrieval pipelines
