@@ -1,10 +1,15 @@
 ' export_wtsi_signatures_exposures.R
 
-Usage: export_wtsi_signatures_exposures.R -p WTSIPATH -s SIGNATURES -e EXPOSURES 
+Usage: export_wtsi_signatures_exposures.R ( -p WTSIPATH | -w WTSIGLOB ) -s SIGNATURES -e EXPOSURES 
 
 Options:
-    -p --path WTSIPATH          Comma-separated list of path
+    -p --path WTSIPATH          Comma-separated list of path. Example: output/1.mat,output/2.mat
+
+    -w --glob WTSIGLOB          Wildcard expression matching WTSI output files. Example: "path/to/output/*.mat".
+                                Must be surrounded by quotes.
+
     -s --signatures SIGNATURES  Output path for signature table
+
     -e --exposures EXPOSURES    Output path for exposures table
 ' -> doc
 
@@ -31,7 +36,11 @@ get_signature_table <- function(matlab_object) {
     return(signatures)
 }
 
-path <- strsplit(args[['paths']], ',')[[1]] %>% .[. != '']
+if (!is.null(args[['paths']])) {
+    path <- strsplit(args[['paths']], ',')[[1]] %>% .[. != '']
+} else if (!is.null(args[['glob']])) {
+    path <- Sys.glob(args[['glob']])
+}
 
 wtsi_outputs <- plyr::dlply(data.frame(path), 'path', function(z) {
     file_path <- z$path

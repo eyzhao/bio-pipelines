@@ -20,6 +20,7 @@ subtypes <- sapply(strsplit(rownames(catalog), ' '), function(z) {
 cancerType <- as.character(args[['STUDY']])
 
 originalGenomes <- as.matrix(catalog)
+storage.mode(originalGenomes) <- "double" 
 
 sampleNames <- colnames(catalog)
 
