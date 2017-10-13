@@ -2,7 +2,7 @@
 Converts a table of merged mutation catalogs in long "tidy" format into a wide matrix ready to be parsed by
 the mutSignatures (WTSI-style) mutation signature calculator.
 
-Usage: catalog_tidy_to_mat.R -i CATALOGPATH -o OUTPUT [ -c COLUMN ]
+Usage: catalog_tidy_to_mutSignatures.R -i CATALOGPATH -o OUTPUT [ -c COLUMN ]
 
 Options:
     -i --input CATALOGPATH          Input path to catalog in long "tidy" format.
