@@ -21,13 +21,13 @@ if (is.null(args[['column']])) {
 
 library(tidyverse)
 
-input <- read_tsv(args[['input']], col_types = cols(value = col_number()))
+input <- read_tsv(args[['input']], col_types = cols(count = col_number()))
 
-input <- input[, c(column_name, 'mutation_type', 'value')]
+input <- input[, c(column_name, 'mutation_type', 'count')]
 
 input %>%
-    mutate(mutation_type = gsub('(.)\\[(.)>(.)\\](.)', '\\2>\\3:\\1\\2\\4', mutation_type)) %>%
-    spread(mutation_type, value) %>%
+    spread_(key_col = column_name, value_col = 'count') %>%
+    as.data.frame %>%
     `rownames<-`(NULL) %>%
-    column_to_rownames(column_name) %>%
+    column_to_rownames('mutation_type') %>%
     write.table(args[['output']], quote=FALSE, sep='\t')

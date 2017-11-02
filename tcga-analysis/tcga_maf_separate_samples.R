@@ -22,7 +22,7 @@ library(tidyverse)
 sample_column = args[['s']]
 output_dir = args[['d']]
 
-suppressMessages(maf <- read_tsv(args[['i']]))
+suppressMessages(maf <- read_tsv(args[['i']], comment = '#'))
 
 if (!is.null(args[['f']])) {
     if (is.null(args[['c']])) {

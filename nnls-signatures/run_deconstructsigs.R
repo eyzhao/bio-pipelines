@@ -1,6 +1,6 @@
 ' run_deconstructsigs.R - Wrapper for deconstructsigs to compute mutation signatures
 
-Usage: deconstructsigs_script.R ( -m MAF | -v VCF ) -c CATALOG -e EXPOSURES [ -x -r REFERENCE ]
+Usage: deconstructsigs_script.R ( -m MAF | -v VCF ) -c CATALOG -e EXPOSURES [ options ]
 
 Options:
     -m MAF              SNV input in MAF format
