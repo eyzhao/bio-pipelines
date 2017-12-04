@@ -27,7 +27,11 @@ if (is.null(args[['signit']])) {
     load_all(args[['signit']])
 }
 
-exposures <- get_exposures(file = args[['catalog']])
+mutation_catalog <- read_tsv(args[['catalog']])
+
+colnames(mutation_catalog) <- c('mutation_type', 'count')
+
+exposures <- get_exposures(mutation_catalog)
 
 print('SignIT Analysis Complete.')
 

@@ -1,6 +1,6 @@
 function [input allProcesses allExposures idx processes exposures processStab processStabAvg] = decipherMutationalProcesses( totalIterationsPerCore, ...
                                                                                                                 numberProcessesToExtract, ...
-                                                                                                                 inputFileName, outputFileName)
+                                                                                                                 inputFileName, outputFileName, totalCores)
 % Ludmil B. Alexandrov
 % Cancer Genome Project
 % Wellcome Trust Sanger Institute
@@ -17,7 +17,7 @@ function [input allProcesses allExposures idx processes exposures processStab pr
    removeWeakMutationTypes = 0.01; % removes weak mutation types, i.e. reduces the dimmensions
 
    %% Simple validation of the input params
-   totalCores = matlabpool('size');
+   %%totalCores = matlabpool('size');
    if ( totalCores == 0)
        error( 'decipherMutationalProcesses: Please initialize a matlabpool!' );
    end

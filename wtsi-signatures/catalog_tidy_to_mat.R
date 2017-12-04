@@ -2,12 +2,13 @@
 Converts a table of merged mutation catalogs in long "tidy" format into a wide matrix ready to be parsed by
 the WTSI matlab code.
 
-Usage: catalog_tidy_to_mat.R -i CATALOGPATH -o OUTPUT -s STUDY
+Usage: catalog_tidy_to_mat.R -i CATALOGPATH -o OUTPUT -s STUDY [ -c IDCOL ]
 
 Options:
     -i --input CATALOGPATH          Input path to catalog in long "tidy" format.
     -o --output OUTPUT              Output path to WTSI input .mat file
     -s --study STUDY                Name of the study, which will be loaded into cancerType variable
+    -c --idcol IDCOL                Name of the sample ID column (default is "sample")
 ' -> doc
 
 library(docopt)
@@ -18,9 +19,17 @@ library(tidyverse)
 
 input <- read_tsv(args[['input']])
 
+if (!is.null(args[['idcol']])) {
+    colnames(input)[ colnames(input) == args[['idcol']] ] = 'sample'
+}
+
+if (! 'sample' %in% colnames(input)) {
+    stop('Column name sample is not found in input table. Please rename columns or provide --idcol parameter.')
+}
+
 matrix_df <- input %>%
-    select(id_comparison, mutation_type, value) %>%
-    spread(id_comparison, value)
+    select(sample, mutation_type, value) %>%
+    spread(sample, value)
 
 originalGenomes <- matrix_df %>%
     select(-mutation_type) %>%
