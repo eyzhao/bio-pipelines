@@ -28,8 +28,8 @@ mutation_catalog <- function(snv) {
     catalog %>%
         as.data.frame %>%
         rownames_to_column('sample') %>%
-        gather(mutation_type, value, -sample) %>%
-        mutate(value = as.numeric(value)) %>%
+        gather(mutation_type, count, -sample) %>%
+        mutate(count = as.numeric(count)) %>%
         as_tibble %>%
         arrange(sample, mutation_type)
 }
