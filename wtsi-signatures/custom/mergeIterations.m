@@ -21,33 +21,40 @@ function [] = mergeIterations( ...
    pathsData = textscan(fid, '%s', 'Delimiter', '\n');
    paths = pathsData{1};
 
-   iterationData = cellfun(@(x) {load(x)}, paths);
+   iteration_one = load(paths{1});
 
-   totalIterationsPerCore = size(iterationData{1}.genomeErrorsPar, 3);
-   numberProcessesToExtract = size(iterationData{1}.W, 2) / totalIterationsPerCore;
-   totalGenomes = size(iterationData{1}.H, 2);
-   totalMutationTypes = size(iterationData{1}.W, 1);
+   number_of_files = length(paths);
+   totalIterationsPerCore = size(iteration_one.genomeErrorsPar, 3);
+   numberProcessesToExtract = size(iteration_one.W, 2) / totalIterationsPerCore;
+   totalGenomes = size(iteration_one.H, 2);
+   totalMutationTypes = size(iteration_one.W, 1);
 
-   Wall = zeros( totalMutationTypes, totalIterationsPerCore * numberProcessesToExtract * length(iterationData) );
-   Hall = zeros( numberProcessesToExtract * totalIterationsPerCore * length(iterationData), totalGenomes );
-   genomeErrors = zeros(totalMutationTypes, totalGenomes, totalIterationsPerCore * length(iterationData) );
-   genomesReconstructed = zeros(totalMutationTypes, totalGenomes, totalIterationsPerCore * length(iterationData) );
+   Wall = zeros( totalMutationTypes, totalIterationsPerCore * numberProcessesToExtract * number_of_files );
+   Hall = zeros( numberProcessesToExtract * totalIterationsPerCore * number_of_files, totalGenomes );
+   genomeErrors = zeros(totalMutationTypes, totalGenomes, totalIterationsPerCore * number_of_files );
+   genomesReconstructed = zeros(totalMutationTypes, totalGenomes, totalIterationsPerCore * number_of_files );
 
+   disp('Computing Wall and Hall matrices')
    stepAll = numberProcessesToExtract * totalIterationsPerCore;
    step = 1;
    for startAll = 1 : stepAll : size(Wall, 2)
+       disp(['Loading data from ' paths{step}])
+       iteration_data = load(paths{step});
        endAll = startAll + stepAll - 1;
-       Wall(:, startAll:endAll) = iterationData{step}.W;
-       Hall(startAll:endAll, :) = iterationData{step}.H;
+       Wall(:, startAll:endAll) = iteration_data.W;
+       Hall(startAll:endAll, :) = iteration_data.H;
        step = step + 1;
    end
 
+   disp('\nCalculating genome error matrices')
    step = 1;
    stepAll = totalIterationsPerCore;
    for startAll = 1 : stepAll : size( genomeErrors, 3 )
+       disp(['Loading data from ' paths{step}])
+       iteration_data = load(paths{step});
        endAll = startAll + stepAll - 1;
-       genomeErrors(:, :, startAll:endAll) = iterationData{step}.genomeErrorsPar;
-       genomesReconstructed(:, :, startAll:endAll) = iterationData{step}.genomesReconstructedPar;
+       genomeErrors(:, :, startAll:endAll) = iteration_data.genomeErrorsPar;
+       genomesReconstructed(:, :, startAll:endAll) = iteration_data.genomesReconstructedPar;
        step = step + 1;
    end
 
@@ -69,7 +76,7 @@ function [] = mergeIterations( ...
                                                           totalReplicates, ...
                                                           processesDistance);
     
-   mutationTypesToRemoveSet = iterationData{1}.mutationTypesToRemoveSet;
+   mutationTypesToRemoveSet = iteration_one.mutationTypesToRemoveSet;
 
    [processes processesStd Wall genomeErrors genomesReconstructed ] = ...
                                         addWeak( mutationTypesToRemoveSet, ... 
@@ -87,5 +94,7 @@ function [] = mergeIterations( ...
         'allProcesses', 'allExposures', 'genomeErrors', 'genomesReconstructed', 'idx', ...
         'idxS', 'processes', 'processesStd', 'exposures', 'exposureStd', 'processStab', ...
         'processStabAvg', 'clusterCompactness', 'input');
+
+    disp(['Wrote output to ' outputPath])
    
 end

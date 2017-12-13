@@ -1,4 +1,4 @@
-function iterationData = ...
+function [] = ...
     outputIterationData(inputPath, outputPath)
   
    %% Simple validation of the input params
@@ -26,3 +26,4 @@ function iterationData = ...
      
    save(outputPath, 'genomes', 'mutationTypesToRemoveSet')
    disp(['File output to ' outputPath])
+end
