@@ -1,10 +1,11 @@
 ' row_bind_tables.R
 
-Usage: row_bind_tables.R ( -p PATHS | -g GLOB ) -o OUTPUT
+Usage: row_bind_tables.R ( -p PATHS | -i INPUT | -G GLOB ) -o OUTPUT
 
 Options:
     -p --paths PATHS            Comma separated list of paths to TSV files
-    -g --glob GLOB              Globstring matching paths
+    -i --input INPUT            Path to a file containing paths to tables, one per line
+    -G --glob GLOB              Globstring matching paths
     -o --output OUTPUT          Path to output
 ' -> doc
 
@@ -14,10 +15,14 @@ library(readr)
 library(doParallel)
 args <- docopt(doc)
 
-if ( is.null(args[['glob']]) ) {
+if ( ! is.null(args[['paths']]) ) {
     paths = strsplit(args[['paths']], ',')[[1]]
-} else if ( is.null(args[['paths']]) ) {
+} else if (! is.null(args[['input']])) {
+    paths = readLines(args[['input']])
+} else if ( ! is.null(args[['glob']]) ) {
     paths = Sys.glob(args[['glob']])
+} else {
+    stop('Must provide one of --paths, --input, or --glob.')
 }
 
 message('Merging files')
