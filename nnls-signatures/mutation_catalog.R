@@ -24,21 +24,41 @@ Options:
 ' -> doc
 
 mutation_catalog <- function(snv, genome) {
-    catalog <- mut.to.sigs.input(snv %>% as.data.frame,
-                      sample.id = 'sample',
-                      chr = 'chr',
-                      pos = 'pos',
-                      ref = 'ref',
-                      alt = 'alt',
-                      bsg = genome)
+    print(snv)
+    print(genome)
 
-    catalog %>%
-        as.data.frame %>%
-        rownames_to_column('sample') %>%
-        gather(mutation_type, count, -sample) %>%
-        mutate(count = as.numeric(count)) %>%
-        as_tibble %>%
-        arrange(sample, mutation_type)
+    if (nrow(snv) > 0) {
+        catalog <- mut.to.sigs.input(
+            snv %>% as.data.frame,
+            sample.id = 'sample',
+            chr = 'chr',
+            pos = 'pos',
+            ref = 'ref',
+            alt = 'alt',
+            bsg = genome
+        )
+        print(catalog)
+
+        out <- catalog %>%
+            as.data.frame %>%
+            rownames_to_column('sample') %>%
+            gather(mutation_type, count, -sample) %>%
+            mutate(count = as.numeric(count)) %>%
+            as_tibble %>%
+            arrange(sample, mutation_type)
+    } else {
+        bases = c('A', 'C', 'G', 'T')
+        changes = c('C>A', 'C>G', 'C>T', 'T>A', 'T>C', 'T>G')
+        df = crossing(five_prime = bases, base_change = changes, three_prime = bases)
+        mutation_types = sprintf('%s[%s]%s', df[['five_prime']], df[['base_change']], df[['three_prime']])
+        out <- tibble(
+            sample = 'x',
+            mutation_type = mutation_types,
+            count = 0
+        )
+    }
+
+    return(out)
 }
 
 library('docopt')
@@ -113,7 +133,7 @@ print(snv)
 
 snv <- snv %>%
     mutate(chr = gsub('chr', '', chr)) %>%
-    filter(chr %in% as.character(1:22)) %>%
+    filter(chr %in% c(as.character(1:22), 'X', 'Y')) %>%
     mutate(chr = paste0('chr', chr))
 
 if (! multisample) {
