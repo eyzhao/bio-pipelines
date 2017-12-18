@@ -28,8 +28,8 @@ if (! 'sample' %in% colnames(input)) {
 }
 
 matrix_df <- input %>%
-    select(sample, mutation_type, value) %>%
-    spread(sample, value)
+    select(sample, mutation_type, count) %>%
+    spread(sample, count)
 
 originalGenomes <- matrix_df %>%
     select(-mutation_type) %>%
