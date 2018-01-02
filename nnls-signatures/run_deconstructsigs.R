@@ -1,12 +1,13 @@
 ' run_deconstructsigs.R - Wrapper for deconstructsigs to compute mutation signatures
 
-Usage: deconstructsigs_script.R ( -m MAF | -v VCF ) -c CATALOG -e EXPOSURES [ options ]
+Usage: deconstructsigs_script.R ( -m MAF | -v VCF ) -e EXPOSURES [ -c CATALOG options ]
 
 Options:
     -m MAF              SNV input in MAF format
     -v VCF              SNV input in VCF format
-    -c CATALOG          Output to mutation catalog, computed by deconstructSigs
     -e EXPOSURES        Output path to mutation signature exposures, computed by deconstructSigs
+
+    -c CATALOG          Output to mutation catalog, computed by deconstructSigs
 
     -r REFERENCE        Reference genome name. Either hg19 or GRCh38. Default is hg19.
 
@@ -95,8 +96,22 @@ e_vector <- whichSignatures(catalog,
 mutation_burden <- sum(catalog)
 exposures <- e_vector * mutation_burden
 
-catalog %>% t %>% as.data.frame %>% `colnames<-`(c('count')) %>% rownames_to_column('mutation_type') %>% write_tsv(args[['c']])
-exposures %>% t %>% as.data.frame %>% `colnames<-`(c('count')) %>% rownames_to_column('signature') %>% dplyr::mutate(signature = gsub('\\.', ' ', signature)) %>% write_tsv(args[['e']])
+if (!is.null(args[['c']]) {
+    catalog %>% 
+        t %>% 
+        as.data.frame %>% 
+        `colnames<-`(c('count')) %>% 
+        rownames_to_column('mutation_type') %>%
+        write_tsv(args[['c']])
+    print(paste('Wrote catalog to', args[['c']]))
+}
 
-print(paste('Wrote signatures output to', args[['c']]))
+exposures %>%
+    t %>% 
+    as.data.frame %>% 
+    `colnames<-`(c('count')) %>%
+    rownames_to_column('signature') %>%
+    dplyr::mutate(signature = gsub('\\.', ' ', signature)) %>%
+    write_tsv(args[['e']])
+
 print(paste('Wrote exposures output to', args[['e']]))

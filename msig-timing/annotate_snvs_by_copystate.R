@@ -1,10 +1,12 @@
-' annotate_snvs_by_copystate_single.R
+' annotate_snvs_by_copystate.R
 
-Usage: annotate_snvs_by_copystate_single.R -c CNVSEGS -s SNV -o OUTPUT
+Usage: annotate_snvs_by_copystate.R -c CNVSEGS -s SNV -p PLOIDY -t TC -o OUTPUT
 
 Options:
     -c CNVSEGS          CNV segs file
     -s SNV              VCF file containing SNV data
+    -p PLOIDY           Ploidy as an integer (i.e. 2 is diploid)
+    -t TC               Tumour content as a fraction from 0 to 1
     -o OUTPUT           Path to output (saved as TSV)
 ' -> doc
 
@@ -23,6 +25,11 @@ library(tibble)
 cnv_segs_path <- args[['c']]
 snv_path <- args[['s']]
 output_path <- args[['o']]
+
+tumour_content <- as.numeric(args[['t']])
+ploidy <- as.integer(args[['p']])
+
+sample_prefix <- gsub('(biop|arch\\d+)_.*', '\\1', args[['a']])
 
 snv <- readVcf(snv_path)
 
@@ -57,8 +64,12 @@ overlaps <- findOverlaps(cnv, snv_gr)
 snv_cnv <- variant %>%
     as_tibble %>%
     slice(subjectHits(overlaps)) %>%
-    cbind(cnv %>% as_tibble %>% slice(queryHits(overlaps)) %>% select(cnv_start = start, cnv_end = end, cnv_state = hmm)) %>%
-    mutate(pos = as.numeric(pos)) %>%
+    cbind(cnv %>% as_tibble %>% slice(queryHits(overlaps)) %>% select(cnv_start = start, cnv_end = end, tumour_copy = hmm)) %>%
+    mutate(
+        pos = as.numeric(pos),
+        normal_copy = ploidy,
+        tumour_content = tumour_content
+    ) %>%
     as_tibble
 
 snv_cnv %>% write_tsv(output_path)
