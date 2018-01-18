@@ -19,7 +19,7 @@ if (is.null(args[['signit']])) {
 } else {
     library(devtools)
     library(tidyverse)
-    library(rjags)
+    library(rstan)
     library(nnls)
     library(dbscan)
     library(Rtsne)
@@ -27,7 +27,7 @@ if (is.null(args[['signit']])) {
     load_all(args[['signit']])
 }
 
-exposures <- get_exposures(file = args[['catalog']])
+exposures <- get_exposures(file = args[['catalog']], n_cores = 4)
 
 print('SignIT Analysis Complete.')
 
