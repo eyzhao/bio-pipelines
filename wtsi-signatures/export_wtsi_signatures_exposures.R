@@ -36,8 +36,8 @@ get_signature_table <- function(matlab_object) {
     return(signatures)
 }
 
-if (!is.null(args[['paths']])) {
-    path <- strsplit(args[['paths']], ',')[[1]] %>% .[. != '']
+if (!is.null(args[['path']])) {
+    path <- strsplit(args[['path']], ',')[[1]] %>% .[. != '']
 } else if (!is.null(args[['glob']])) {
     path <- Sys.glob(args[['glob']])
 }

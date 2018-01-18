@@ -1,12 +1,13 @@
 ' row_bind_tables.R
 
-Usage: row_bind_tables.R ( -p PATHS | -i INPUT | -G GLOB ) -o OUTPUT
+Usage: row_bind_tables.R ( -p PATHS | -i INPUT | -G GLOB ) -o OUTPUT [ --trim-paths ]
 
 Options:
     -p --paths PATHS            Comma separated list of paths to TSV files
     -i --input INPUT            Path to a file containing paths to tables, one per line
     -G --glob GLOB              Globstring matching paths
     -o --output OUTPUT          Path to output
+    --trim-paths                Includes only the file name instead of full path
 ' -> doc
 
 library(docopt)
@@ -36,6 +37,12 @@ output <- ddply(data.frame(paths), 'paths', function(z) {
       message(paste0('Reading file: ', path))
       suppressMessages(read_tsv(path))
 }, .parallel = TRUE)
+
+if (args[['trim-paths']]) {
+    output <- dplyr::mutate(output,
+        paths = sapply(as.character(paths), function(p) { tail(strsplit(p, '/')[[1]], 1) })
+    )
+}
 
 message('Done merging')
 

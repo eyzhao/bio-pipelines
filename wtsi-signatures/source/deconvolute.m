@@ -23,17 +23,26 @@ function [Wall Hall genomeErrors genomesReconstructed idx idxS processes process
                                                       
    disp( ['Extracting ' num2str(numberProcessesToExtract) ' mutational signatures for ' num2str(totalIterationsPerCore) ' iterations on ' num2str(totalCores) ' labs:'] );
    
-   spmd
+   %spmd
        
-    if ( labindex == 1 )
-        printProgress = 1;
-    else
-        printProgress = 0;
-    end
+   % if ( labindex == 1 )
+   %     printProgress = 1;
+   % else
+   %     printProgress = 0;
+   % end
     
-    [W H genomeErrorsPar genomesReconstructedPar] = ...
-         extract(genomes, totalIterationsPerCore, numberProcessesToExtract, printProgress);
-   end
+
+   printProgress = 1;
+    
+   [W H genomeErrorsPar genomesReconstructedPar] = ...
+      extract(genomes, totalIterationsPerCore, numberProcessesToExtract, printProgress);
+
+   W = {W};
+   H = {H};
+   genomeErrorsPar = {genomeErrorsPar};
+   genomesReconstructedPar = {genomesReconstructedPar};
+
+   %end
 
    Wall = zeros( totalMutationTypes, numberProcessesToExtract * totalIterationsPerCore * length(W) );
    Hall = zeros( numberProcessesToExtract * totalIterationsPerCore * length(W), totalGenomes );
