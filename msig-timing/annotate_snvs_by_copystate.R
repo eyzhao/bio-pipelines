@@ -1,11 +1,13 @@
 ' annotate_snvs_by_copystate_single.R
 
-Usage: annotate_snvs_by_copystate_single.R -c CNVSEGS -s SNV -o OUTPUT
+Usage: annotate_snvs_by_copystate_single.R -c CNVSEGS -s SNV -o OUTPUT [ -l COLS ]
 
 Options:
     -c CNVSEGS          CNV segs file
     -s SNV              VCF file containing SNV data
     -o OUTPUT           Path to output (saved as TSV)
+    -l COLS             Name of columns in the CNV file
+                            ("chr", "start", "end", and "copy_number" will be used)
 ' -> doc
 
 library(docopt)
@@ -44,8 +46,14 @@ variant <- variant %>%
 
 # overlap SNVs with CNV segs
 
-cnv <- read_tsv(cnv_segs_path, col_names = c('chr', 'start', 'end', 'hmm')) %>%
-    filter(hmm != 5) %>% # filter out high level amplifications as their exact CN values are unreliable.
+if (!is.null(args[['l']])) {
+    cols = strsplit(args[['l']], ',')[[1]]
+    cnv_data = read_tsv(cnv_segs_path, col_names = cols)
+} else {
+    cnv_data = read_tsv(cnv_segs_path)
+}
+
+cnv <- cnv_data %>%
     filter(chr %in% as.character(1:22)) %>% # filter out sex chromosomes as exact copy number estimates are trickier there
     GRanges()
 snv_gr <- GRanges(variant %>%
@@ -57,7 +65,7 @@ overlaps <- findOverlaps(cnv, snv_gr)
 snv_cnv <- variant %>%
     as_tibble %>%
     slice(subjectHits(overlaps)) %>%
-    cbind(cnv %>% as_tibble %>% slice(queryHits(overlaps)) %>% select(cnv_start = start, cnv_end = end, cnv_state = hmm)) %>%
+    cbind(cnv %>% as_tibble %>% slice(queryHits(overlaps)) %>% select(cnv_start = start, cnv_end = end, cnv_state = copy_number)) %>%
     mutate(pos = as.numeric(pos)) %>%
     as_tibble
 
