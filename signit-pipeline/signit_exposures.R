@@ -19,7 +19,7 @@ if (is.null(args[['signit']])) {
 } else {
     library(devtools)
     library(tidyverse)
-    library(rjags)
+    library(rstan)
     library(nnls)
     library(dbscan)
     library(Rtsne)

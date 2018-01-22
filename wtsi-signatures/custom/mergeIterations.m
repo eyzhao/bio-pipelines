@@ -38,7 +38,6 @@ function [] = mergeIterations( ...
    stepAll = numberProcessesToExtract * totalIterationsPerCore;
    step = 1;
    for startAll = 1 : stepAll : size(Wall, 2)
-       disp(['Loading data from ' paths{step}])
        iteration_data = load(paths{step});
        endAll = startAll + stepAll - 1;
        Wall(:, startAll:endAll) = iteration_data.W;
@@ -50,7 +49,6 @@ function [] = mergeIterations( ...
    step = 1;
    stepAll = totalIterationsPerCore;
    for startAll = 1 : stepAll : size( genomeErrors, 3 )
-       disp(['Loading data from ' paths{step}])
        iteration_data = load(paths{step});
        endAll = startAll + stepAll - 1;
        genomeErrors(:, :, startAll:endAll) = iteration_data.genomeErrorsPar;
