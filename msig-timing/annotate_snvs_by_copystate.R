@@ -59,8 +59,10 @@ if (!is.null(args[['l']])) {
 }
 
 cnv <- cnv_data %>%
+    select(chr, start, end, copy_number) %>%
     filter(chr %in% as.character(1:22)) %>% # filter out sex chromosomes as exact copy number estimates are trickier there
     GRanges()
+
 snv_gr <- GRanges(variant %>%
                   select(chr, start = pos, ref, alt) %>%
                   mutate(end = start) %>%
@@ -73,7 +75,11 @@ snv_cnv <- variant %>%
     cbind(cnv %>% as_tibble %>% slice(queryHits(overlaps)) %>% select(cnv_start = start, cnv_end = end, tumour_copy = copy_number)) %>%
     mutate(
         pos = as.numeric(pos),
-        tumour_content = tumour_content
+        tumour_content = tumour_content,
+        normal_copy = 2
+    ) %>%
+    filter(
+        tumour_copy > 0
     ) %>%
     as_tibble
 
