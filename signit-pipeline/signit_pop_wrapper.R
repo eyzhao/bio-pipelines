@@ -1,6 +1,6 @@
 ' signit_pop_wrapper.R
 
-Usage: signit_pop_wrapper.R -i INPUT -o OUTPUT [ -p NPOP -r REF --signit SIGNIT ]
+Usage: signit_pop_wrapper.R -i INPUT -o OUTPUT [ -p NPOP -r REF --subset --signit SIGNIT ]
 
 Options:
     -i --input INPUT        Input mutation table
@@ -10,6 +10,7 @@ Options:
                                 where ... refers to columns named based on the signature name.
                                 mutation_type column is formatted for example C[C>A]T for a C>A mutation
                                 in CCT context.
+    --subset                Subset signatures. If included, SignIT will subset signatures prior to analysis.
     --signit SIGNIT         Path to SignIT package for loading, if it is not installed in R
 ' -> doc
 
@@ -66,7 +67,13 @@ if (is.null(args[['ref']])) {
 print(ref_signatures)
 
 start_time <- Sys.time()
-stan_object <- get_population_signatures(maf, reference_signatures = ref_signatures, method = 'vb', n_populations = n_pop)
+stan_object <- get_population_signatures(
+    maf,
+    reference_signatures = ref_signatures,
+    subset_signatures = args[['subset']],
+    method = 'vb',
+    n_populations = n_pop
+)
 end_time <- Sys.time()
 
 output <- list(
