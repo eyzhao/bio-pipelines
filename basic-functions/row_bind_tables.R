@@ -1,6 +1,6 @@
 ' row_bind_tables.R
 
-Usage: row_bind_tables.R ( -p PATHS | -i INPUT | -G GLOB ) -o OUTPUT [ --trim-paths ]
+Usage: row_bind_tables.R ( -p PATHS | -i INPUT | -G GLOB ) -o OUTPUT [ --trim-paths --index-col-name ICN ]
 
 Options:
     -p --paths PATHS            Comma separated list of paths to TSV files
@@ -8,6 +8,7 @@ Options:
     -G --glob GLOB              Globstring matching paths
     -o --output OUTPUT          Path to output
     --trim-paths                Includes only the file name instead of full path
+    --index-col-name ICN        Name of the index column containing the paths. Defaults to "paths"
 ' -> doc
 
 library(docopt)
@@ -19,8 +20,7 @@ args <- docopt(doc)
 if ( ! is.null(args[['paths']]) ) {
     paths = strsplit(args[['paths']], ',')[[1]]
 } else if (! is.null(args[['input']])) {
-    paths = read_lines(args[['input']])
-    print(paths)
+    paths = readLines(args[['input']])
 } else if ( ! is.null(args[['glob']]) ) {
     paths = Sys.glob(args[['glob']])
 } else {
@@ -46,6 +46,13 @@ if (args[['trim-paths']]) {
         paths = sapply(as.character(paths), function(p) { tail(strsplit(p, '/')[[1]], 1) })
     )
 }
+
+if (is.null(args[['index-col-name']])) {
+    icn = 'paths'
+} else {
+    icn = as.character(args[['index-col-name']])
+}
+colnames(output)[colnames(output) == 'paths'] <- icn
 
 message('Done merging')
 
