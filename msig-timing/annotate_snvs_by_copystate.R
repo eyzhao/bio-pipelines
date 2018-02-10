@@ -1,13 +1,14 @@
 ' annotate_snvs_by_copystate.R
 
-Usage: annotate_snvs_by_copystate.R -c CNVSEGS -s SNV -p PLOIDY -t TC -o OUTPUT
+Usage: annotate_snvs_by_copystate.R -c CNVSEGS -s SNV -t TC -o OUTPUT [-l COLS]
 
 Options:
     -c CNVSEGS          CNV segs file
     -s SNV              VCF file containing SNV data
-    -p PLOIDY           Ploidy as an integer (i.e. 2 is diploid)
     -t TC               Tumour content as a fraction from 0 to 1
     -o OUTPUT           Path to output (saved as TSV)
+    -l COLS             Name of columns in the CNV file
+                            ("chr", "start", "end", and "copy_number" will be used)
 ' -> doc
 
 library(docopt)
@@ -27,7 +28,6 @@ snv_path <- args[['s']]
 output_path <- args[['o']]
 
 tumour_content <- as.numeric(args[['t']])
-ploidy <- as.integer(args[['p']])
 
 sample_prefix <- gsub('(biop|arch\\d+)_.*', '\\1', args[['a']])
 
@@ -51,8 +51,14 @@ variant <- variant %>%
 
 # overlap SNVs with CNV segs
 
-cnv <- read_tsv(cnv_segs_path, col_names = c('chr', 'start', 'end', 'hmm')) %>%
-    filter(hmm != 5) %>% # filter out high level amplifications as their exact CN values are unreliable.
+if (!is.null(args[['l']])) {
+    cols = strsplit(args[['l']], ',')[[1]]
+    cnv_data = read_tsv(cnv_segs_path, col_names = cols)
+} else {
+    cnv_data = read_tsv(cnv_segs_path)
+}
+
+cnv <- cnv_data %>%
     filter(chr %in% as.character(1:22)) %>% # filter out sex chromosomes as exact copy number estimates are trickier there
     GRanges()
 snv_gr <- GRanges(variant %>%
@@ -64,10 +70,9 @@ overlaps <- findOverlaps(cnv, snv_gr)
 snv_cnv <- variant %>%
     as_tibble %>%
     slice(subjectHits(overlaps)) %>%
-    cbind(cnv %>% as_tibble %>% slice(queryHits(overlaps)) %>% select(cnv_start = start, cnv_end = end, tumour_copy = hmm)) %>%
+    cbind(cnv %>% as_tibble %>% slice(queryHits(overlaps)) %>% select(cnv_start = start, cnv_end = end, tumour_copy = copy_number)) %>%
     mutate(
         pos = as.numeric(pos),
-        normal_copy = ploidy,
         tumour_content = tumour_content
     ) %>%
     as_tibble
