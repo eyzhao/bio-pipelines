@@ -19,12 +19,15 @@ args <- docopt(doc)
 if ( ! is.null(args[['paths']]) ) {
     paths = strsplit(args[['paths']], ',')[[1]]
 } else if (! is.null(args[['input']])) {
-    paths = readLines(args[['input']])
+    paths = read_lines(args[['input']])
+    print(paths)
 } else if ( ! is.null(args[['glob']]) ) {
     paths = Sys.glob(args[['glob']])
 } else {
     stop('Must provide one of --paths, --input, or --glob.')
 }
+
+paths <- unique(paths)
 
 message('Merging files')
 
