@@ -10,14 +10,16 @@ Options:
     -m --mapsigs MAPSIGS        Path to MapSigs package (if not installed)
     -s --signit SIGNIT          Path to SignIT package (if not installed)
 
-    --half-life HALFLIFE        Half-life of beta concentration decay factor (default: 200000).
+    --half-life HALFLIFE        Half-life of beta concentration decay factor (default: 300000).
                                     Higher values will result in more influence between neighbouring
                                     mutations, which assumes that mutational processes change less
-                                    across the genome.
+                                    across the genome. The default has been chosen to minimize the
+                                    WAIC for most chromosomes.
 
-    --kappa-start KAPPA         The beta concentration between neighbouring mutations (default: 500).
+    --kappa-start KAPPA         The beta concentration between neighbouring mutations (default: 1500).
                                     The higher the kappa-start, the less difference in mutation signatures
-                                    between closely neighbouring mutations.
+                                    between closely neighbouring mutations. The default has been
+                                    chosen to minimize the WAIC in most chromosomes.
 
     --chains CHAINS             Number of chains to run (default: 3)
     --iter ITER                 Number of sampling iterations per chain (default: 100)
@@ -77,8 +79,8 @@ mapsigs_output = MapSigs(
     n_chains = ifelse(is.null(args[['chains']]), 3, as.numeric(args[['chains']])),
     n_iter = ifelse(is.null(args[['iter']]), 100, as.numeric(args[['iter']])),
     n_warmup = ifelse(is.null(args[['warmup']]), 1900, as.numeric(args[['warmup']])),
-    half_life = ifelse(is.null(args[['half-life']]), 200000, as.numeric(args[['half-life']])),
-    kappa_start = ifelse(is.null(args[['kappa-start']]), 500, as.numeric(args[['kappa-start']]))
+    half_life = ifelse(is.null(args[['half-life']]), 300000, as.numeric(args[['half-life']])),
+    kappa_start = ifelse(is.null(args[['kappa-start']]), 1500, as.numeric(args[['kappa-start']]))
 )
 
 end_time <- Sys.time()
