@@ -1,6 +1,6 @@
-' row_bind_tables.R
+' aggregate_cluster_table.tsv
 
-Usage: row_bind_tables.R ( -p PATHS | -i INPUT | -G GLOB ) -o OUTPUT [ --trim-paths --index-col-name ICN ]
+Usage: aggregate_cluster_table.tsv ( -p PATHS | -i INPUT | -G GLOB ) -o OUTPUT [ --trim-paths --index-col-name ICN ]
 
 Options:
     -p --paths PATHS            Comma separated list of paths to TSV files
@@ -38,7 +38,25 @@ options(readr.show_progress = FALSE)
 output <- ddply(data.frame(paths), 'paths', function(z) {
       path = as.character(z$paths)
       message(paste0('Reading file: ', path))
-      suppressMessages(read_tsv(path))
+
+      file <- suppressMessages(
+        read_tsv(
+          path,
+          skip = 1,
+          col_names = c(
+            'chr',
+            'pos',
+            'ref_depth',
+            'var_depth',
+            'vaf',
+            'tumour_copy',
+            'clean_copy',
+            'depth',
+            'adequate_depth',
+            'cluster'
+          )
+        )
+      )
 }, .parallel = TRUE)
 
 if (args[['trim-paths']]) {

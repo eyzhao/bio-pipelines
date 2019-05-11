@@ -1,0 +1,270 @@
+---
+title: "Mutation Signature Report"
+author: "Eric Zhao"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+    html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# About this Analysis
+
+This pipeline is currently maintained by Eric Zhao, who can be contacted at [ezhao@bcgsc.ca](mailto:ezhao@bcgsc.ca).
+It was first developed by [Eric Zhao](www.eyzhao.com) at Canada's Michael Smith Genome Sciences Centre
+in January, 2018.
+
+# Analysis of Signatures by WTSI Method
+
+What follows is a *de novo* analysis of mutation signatures using the WTSI framework.
+This framework determines signatures using non-negative matrix factorization (NMF),
+and is described in detail by 
+[Alexandrov et al. (2013)](http://www.cell.com/cell-reports/abstract/S2211-1247(12)00433-0).
+
+Computationally heavy elements of this framework are computed using an upstream pipeline.
+1000 NMF iterations are performed for a range of different models, each of which assumes
+a different number of latent mutation signatures. We begin by reading in the results from
+the analysis.
+
+```{r wtsi_load}
+library(tidyverse)
+library(cowplot)
+library(viridis)
+
+nmf_signatures <- read_tsv('wtsi/combined_signatures.tsv') %>%
+  mutate(
+    mutation_type = sprintf(
+      '%s[%s]%s',
+      substr(subtype, 1, 1),
+      type,
+      substr(subtype, 3, 3)
+    )
+  )
+
+nmf_exposures <- read_tsv('wtsi/combined_exposures.tsv') %>%
+  mutate(sample = gsub('.*?catalog\\/(.*?)\\.tsv', '\\1', sample_names)) %>%
+  select(-path, -sample_names)
+
+nmf_metrics <- read_tsv('wtsi/model_selection_metrics.tsv')
+```
+
+## Selection of Number of Signatures
+
+The number of mutation signatures is selected based on signature stability and Frobenius reconstruction error.
+For this report, we utilize an automated model selection scheme. Signature stability and reconstruction error
+are each first renormalized as (x - min(x)) / (max(x) - min(x)) - see code below for implementation details.
+Because we are aiming to maximize stability and minimize reconstruction error, we then select the model with
+the greatest difference of stability minus reconstruction error.
+
+The mutation signature metrics are plotted for each model below, with the automatically chosen model
+highlighted with a black box.
+
+```{r wtsi_plot_metrics, fig.height = 5, fig.width = 5}
+metrics_for_plot <- nmf_metrics %>%
+  spread(metric, value)
+
+auto_chosen_model = nmf_metrics %>%
+  spread(metric, value) %>%
+  mutate(
+    stability_proportion = (stability - min(stability)) / (max(stability) - min(stability)),
+    reconstruction_proportion = (reconstructionError - min(reconstructionError)) / (max(reconstructionError) - min(reconstructionError)),
+    combined = stability_proportion - reconstruction_proportion
+  ) %>%
+  filter(combined == max(combined)) %>%
+  filter(row_number() == n()) %>%
+  .[['n_signatures']]
+
+metrics_for_plot %>%
+  ggplot(aes(
+    x = stability,
+    y = reconstructionError,
+    label = n_signatures
+  )) +
+  geom_text() +
+  geom_label(
+    data = metrics_for_plot %>% filter(n_signatures == auto_chosen_model),
+    fill = 'black',
+    colour = 'white'
+  ) +
+  labs(
+    x = 'Signature Stability',
+    y = 'Reconstruction Error'
+  ) +
+  theme(
+    strip.background = element_blank(),
+    strip.text = element_text(face = 'bold')
+  )
+
+chosen_nmf_signatures <- nmf_signatures %>%
+  filter(n_signatures == auto_chosen_model) %>%
+  select(signature, mutation_type, proportion)
+
+chosen_nmf_exposures <- nmf_exposures %>%
+  filter(n_signatures == auto_chosen_model)
+```
+
+## Plot of Mutation Signatures
+
+Based on the above analysis, a `r auto_chosen_model`-signature model has been automatically selected.
+We next plot the mutation signatures deciphered using this model. Note that the barplot is coloured
+according to the 5' and 3' mutation context, and a legend is provided.
+
+```{r wtsi_plot_signatures, fig.height = 6, fig.width = 10}
+colour_df <- data.frame(
+  five_prime = c(rep('A', 4), rep('C', 4), rep('G', 4), rep('T', 4)), 
+  three_prime = rep(c('A', 'C', 'G', 'T'), 4),
+  status = factor(1:16, levels=1:16),
+  colour = hsv(h=sort(rep(c(0, 0.3, 0.6, 0.9), 4)), s=rep(c(0.1, 0.2, 0.5, 1), 4), v=rep(c(0.8, 0.8, 0.8, 0.8), 4))
+) %>%
+  mutate(
+    context = paste(five_prime, three_prime, sep='.'),
+  )
+
+signature_plots <- chosen_nmf_signatures %>%
+  mutate(
+    substitution = gsub('.\\[(.*?)\\].', '\\1', mutation_type),
+    context = gsub('(.)\\[.*?\\](.)', '\\1.\\2', mutation_type)
+  ) %>% left_join(
+    colour_df %>% select(context, status), by = 'context'
+  ) %>%
+  plyr::dlply('signature', function(z) {
+  z %>%
+    ggplot(aes(
+      x = context,
+      y = proportion,
+      fill = status
+    )) + 
+    facet_grid(. ~ substitution) +
+    geom_bar(stat = 'identity', width = 0.75) +
+    theme(
+      axis.title.y = element_blank(),
+      strip.background = element_blank(),
+      strip.text = element_text(size = 10),
+      legend.position = 'none',
+      axis.text.x = element_blank(),
+      axis.ticks.x = element_blank()
+    ) +
+    scale_fill_manual(values = as.character(colour_df$colour))
+})
+
+colour_legend = colour_df %>%
+  ggplot(aes(
+    x = five_prime,
+    y = three_prime,
+    fill = status
+  )) +
+  geom_tile(width = 0.8, height = 0.8) +
+  scale_fill_manual(values = as.character(colour_df$colour)) +
+  theme(
+    axis.line = element_blank(),
+    axis.ticks = element_blank(),
+    axis.text = element_text(size = 20),
+    legend.position = 'none'
+  ) +
+  labs(x = "5' context", y = "3' context")
+
+colour_legend_ <- plot_grid(colour_legend, NULL, nrow = 2, rel_heights = c(1, 2.2))
+
+plot_grid(plotlist = signature_plots, ncol = 2, labels = 1:length(signature_plots)) %>%
+  plot_grid(colour_legend_, ncol = 2, rel_widths = c(4.5,1))
+```
+
+## Comparison against reference signatures
+
+Reference signatures through [COSMIC](http://cancer.sanger.ac.uk/cosmic/signatures) provide a point
+of comparison. This allows us to see where our signatures deviate from others discovered in the literature.
+The greater the cosine similarity, the more similar a new signature is to a previously discovered one.
+
+```{r wtsi_reference_comparison, fig.height = 4, fig.width = 8}
+cosine_similarity <- function(x, y) {
+  (x %*% y) / (sqrt(sum(x^2)) * sqrt(sum(y^2)))
+}
+
+reference_signatures <- read_tsv('/projects/ezhao_prj/signatures/reference/wtsi_signatures/v2016-04-05/signatures_probabilities_genome.txt') %>%
+  gather(signature, reference_probability, -mutation_type) %>%
+  rename(reference_signature = signature)
+
+chosen_nmf_signatures %>%
+  left_join(reference_signatures, by = 'mutation_type') %>%
+  group_by(signature, reference_signature) %>%
+  summarise(cosine_similarity = cosine_similarity(proportion, reference_probability)) %>%
+  mutate(reference_signature = as.integer(gsub('Signature ', '', reference_signature))) %>%
+  ggplot(aes(
+    x = reference_signature,
+    y = signature,
+    fill = cosine_similarity
+  )) +
+  scale_fill_viridis(trans = scales::exp_trans(base = 10)) +
+  geom_tile()
+```
+
+## Plot of signature exposures
+
+The mutation signature algorithm simultaneously infers signatures and their relatives contributions
+to each cancer genome. The following plot illustrates the these relative contributions, along with
+the total mutation burden of each genome.
+
+```{r wtsi_exposures}
+nmf_clust <- chosen_nmf_exposures %>%
+  select(sample, signature, exposure) %>%
+  arrange(sample) %>%
+  spread(signature, exposure) %>%
+  select(-sample) %>%
+  dist %>% hclust
+
+sample_levels_raw <- chosen_nmf_exposures %>% arrange(sample) %>% .$sample %>% unique
+sample_levels <- sample_levels_raw[nmf_clust$order]
+
+nmf_exposure_heatmap <- chosen_nmf_exposures %>%
+  group_by(sample) %>%
+  mutate(exposure = exposure / sum(exposure)) %>%
+  ungroup() %>%
+  mutate(sample = factor(sample, levels = sample_levels)) %>%
+  ggplot(aes(
+    x = signature,
+    y = sample,
+    fill = exposure
+  )) +
+  scale_fill_viridis() +
+  geom_tile()
+
+nmf_mutation_burden_barplot <- chosen_nmf_exposures %>%
+  group_by(sample) %>%
+  summarise(mutation_burden = sum(exposure)) %>%
+  ungroup() %>%
+  mutate(sample = factor(sample, levels = sample_levels)) %>%
+  ggplot(aes(
+    x = sample,
+    y = mutation_burden
+  )) +
+  geom_bar(stat = 'identity') +
+  coord_flip() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank(),
+    axis.line.y = element_blank(),
+    axis.title.y = element_blank()
+  )
+
+plot_grid(
+  nmf_exposure_heatmap + theme(legend.position = 'none'),
+  nmf_mutation_burden_barplot,
+  ncol = 2,
+  align = 'h',
+  rel_widths = c(4,2)
+) %>%
+  plot_grid(
+    get_legend(nmf_exposure_heatmap),
+    ncol = 2,
+    rel_widths = c(4,1)
+  )
+```
+
+# Session Info
+
+```{r session_info}
+sessionInfo()
+```

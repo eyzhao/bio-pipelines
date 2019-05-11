@@ -43,7 +43,7 @@ mutation_catalog <- function(snv, genome) {
             as.data.frame %>%
             rownames_to_column('sample') %>%
             gather(mutation_type, count, -sample) %>%
-            mutate(count = as.numeric(count)) %>%
+            mutate(count = as.integer(count)) %>%
             as_tibble %>%
             arrange(sample, mutation_type)
     } else {
